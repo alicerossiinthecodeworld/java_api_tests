@@ -1,5 +1,5 @@
+import io.qameta.allure.Step;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -8,6 +8,7 @@ public class DeleteCourierTest {
     private CourierClient courierClient;
     private int courierId;
     private int status;
+    private Courier courier;
 
     @Before
     public void setUp() {
@@ -16,38 +17,56 @@ public class DeleteCourierTest {
 
     @Test
     public void canSuccessfullyDeleteACourier() {
-        Courier courier = Courier.getRandom();
-        courierClient.createReturnsIsCreated(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        int status = courierClient.deleteReturnsStatus(courierId);
-        assertEquals("Неуспешное удаление",200, status);
+        courier = createCourier();
+        courierId = getCourierId(courier);
+        status = deleteGetStatus(courierId);
+        assertEquals("Неуспешное удаление", 200, status);
     }
 
     @Test
-    public void loginFailsAfterDelete(){
-        Courier courier = Courier.getRandom();
-        courierClient.createReturnsIsCreated(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        courierClient.deleteReturnsStatus(courierId);
-        int status = courierClient.loginReturnsStatus(CourierCredentials.getCourierCredentials(courier));
-        assertEquals("Удалось залогиниться в удалённого курьера", 400, status);
+    public void loginFailsAfterDelete() {
+        courier = createCourier();
+        courierId = getCourierId(courier);
+        deleteGetStatus(courierId);
+        status = loginGetStatus(courier);
+        assertEquals("Удалось залогиниться в удалённого курьера", 404, status);
     }
 
-    //Cогласно спецификации, ответ должен быть 400, ловлю 404, тест можно использовать после исправления ситуации
-    @Ignore
     @Test
-    public void deleteFailsIfNoIdIsSent(){
+    public void deleteFailsIfNoIdIsSent() {
         status = courierClient.deleteWithoutIdReturnsStatus();
-        assertEquals( "Успешный delete запрос без id", 404, status);
+        assertEquals("Успешный delete запрос без id", 404, status);
     }
 
     @Test
-    public void deleteFailsIfNotExistingIdIsSent(){
-        Courier courier = Courier.getRandom();
-        courierClient.createReturnsIsCreated(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        courierClient.delete(courierId);
-        status = courierClient.deleteReturnsStatus(courierId);
-        assertEquals( "Успешный delete запрос на несуществующий id", 404, status);
+    public void deleteFailsIfNotExistingIdIsSent() {
+        courier = createCourier();
+        courierId = getCourierId(courier);
+        deleteGetStatus(courierId);
+        status = deleteGetStatus(courierId);
+        assertEquals("Успешный delete запрос на несуществующий id", 404, status);
+    }
+
+    @Step("CreateCourier")
+    public Courier createCourier() {
+        Courier courier = Courier.randomize();
+        courierClient.create(courier);
+
+        return courier;
+    }
+
+    @Step("Login to Get Id")
+    public int getCourierId(Courier courier) {
+        return courierClient.login(CourierCredentials.getCourierCredentials(courier)).getBody().path("id");
+    }
+
+    @Step("delete Courier")
+    public int deleteGetStatus(int courierId){
+       return courierClient.deleteCourier(courierId).getStatusCode();
+    }
+
+    @Step("try to login to get status")
+    public int loginGetStatus(Courier courier){
+        return courierClient.login(CourierCredentials.getCourierCredentials(courier)).getStatusCode();
     }
 }

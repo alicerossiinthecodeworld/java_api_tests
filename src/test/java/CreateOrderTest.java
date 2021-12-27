@@ -1,3 +1,4 @@
+import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -32,33 +33,29 @@ public class CreateOrderTest {
         orderClient = new OrderClient();
     }
 
-    @After
-    public void tearDown(){
-        //отмена заказа отрабатывает некорректно, закомментила для того, чтобы не портить статистику по созданию заказа
-        //тесты по созданию  все проходят. Сделала отдельный тест отмены заказа.
-
-        //orderClient.cancelOrder(track);
-    }
-
     @Test
     public void createOrderTest(){
-        Order order = orderClient.getRandomOrder(color);
-        Response response = orderClient.createOrderReturnsResponse(order);
+        Response response = createOrder(color);
         status =  response.getStatusCode();
-        track = response.getBody().path("track");
+        track = getTrack(response);
         assertEquals("Неуспешное создание курьера", 201, status);
     }
 
-    @Ignore
-    // Отмена заказа проходит, если передать track не как json, а аргументом в эндпоинт, что не соответстует спецификации.
-    // Оставила в виде, соответствующем спецификации, но тест не проходит. Поэтому заигнорирован.
-
     @Test
     public void cancelOrderSuccess(){
-        Order order = orderClient.getRandomOrder(color);
-        Response response = orderClient.createOrderReturnsResponse(order);
-        track = response.getBody().path("track");
+        Response response = createOrder(color);
+        track = getTrack(response);
         status = orderClient.cancelOrderReturnsStatus(track);
         assertEquals("не отменяется заказ",200,status);
+    }
+    @Step("Create order get status")
+    public Response createOrder(List<String> color){
+        Order order = orderClient.getRandomOrder(color);
+        return orderClient.createOrderReturnsResponse(order);
+    }
+
+    @Step ("get track")
+    public int getTrack(Response response){
+        return response.getBody().path("track");
     }
 }

@@ -1,3 +1,5 @@
+import io.qameta.allure.Step;
+import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,65 +20,68 @@ public class CreateCourierTest {
     @After
     public void teardown() {
         if (courierId > 0) {
-            courierClient.delete(courierId);
+            courierClient.deleteCourier(courierId);
         }
     }
 
     @Test
-    public void courierCreated() {
-        Courier courier = Courier.getRandom();
-        boolean isCreated = courierClient.createReturnsIsCreated(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
+    public void courierCreatedSuccessTest() {
+        Courier courier = Courier.randomize();
+        boolean isCreated = courierClient.createReturnsIfOk(courier);
+        courierId = getCourierId(courier);
         assertTrue("курьер не создан", isCreated);
         assertThat("Не получен id курьера", courierId, is(not(0)));
     }
 
     @Test
     public void impossibleToCreateTwoSameCouriers() {
-        Courier courier = Courier.getRandom();
-        courierClient.createReturnsIsCreated(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        int status = courierClient.createReturnsStatus(courier);
+        Courier courier = Courier.randomize();
+        createCourier(courier);
+        courierId = getCourierId(courier);
+        int status = createCourier(courier).getStatusCode();
         assertEquals(409, status);
     }
 
     @Test
     public void impossibleToCreateTwoCouriersWithTheSameLogin() {
-        Courier courier = Courier.getRandom();
+        Courier courier = Courier.randomize();
         Courier courier1 = new Courier(courier.login, "ururu", "Василий");
-        courierClient.createReturnsIsCreated(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        int status = courierClient.createReturnsStatus(courier1);
+        courierClient.create(courier);
+        courierId = getCourierId(courier);
+        int status = createCourier(courier1).getStatusCode();
         assertEquals(409, status);
     }
 
     @Test
     public void impossibleToCreateCourierWithoutLogin() {
-        Courier courier = Courier.getRandom();
-        int status = courierClient.createWithoutLoginReturnsStatus(courier);
-        assertEquals("Курьер создан без логина", 400, status);
-    }
-
-    @Test
-    public void createdCourierReturnsSuccess() {
-        Courier courier = Courier.getRandom();
-        int status = courierClient.createReturnsStatus(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        assertEquals("Создание курьера не возвращает 201", 201, status);
+        Courier courier = Courier.randomize();
+        int status = createCourier(courier).getStatusCode();
+        assertEquals("Пришёл некорректный статус", 400, status);
     }
 
     @Test
     public void impossibleToCreateCourierWithoutPassword() {
-        Courier courier = Courier.getRandom();
+        Courier courier = Courier.randomize();
         int status = courierClient.createWithoutPasswordReturnsStatus(courier);
         assertEquals("Можно создать курьера без пароля", 400, status);
     }
 
     @Test
     public void possibleToCreateCourierWithoutFirstName() {
-        Courier courier = Courier.getRandom();
+        Courier courier = Courier.randomize();
         int status = courierClient.createWithoutFirstNameReturnsStatus(courier);
-        courierId = courierClient.loginReturnsId(CourierCredentials.getCourierCredentials(courier));
-        assertEquals("Нельзя создать курьера без имени", 201, status);
+        assertEquals("Можно создать курьера без имени", 201, status);
+    }
+
+
+    @Step("CreateCourier")
+    public Response createCourier(Courier courier) {
+        courierClient.create(courier);
+        return courierClient.create(courier);
+    }
+
+    @Step("Login to Get Id")
+    public int getCourierId(Courier courier) {
+        return courierClient.login(CourierCredentials.getCourierCredentials(courier)).getBody().path("id");
     }
 }

@@ -13,29 +13,11 @@ public class OrderClient extends RestAssuredClient{
     private static final String ORDER_PATH = "api/v1/orders";
 
     public Response createOrderReturnsResponse(Order order){
-        JSONObject createOrderBody = new JSONObject();
-        createOrderBody.put("firstName", order.firstName);
-        createOrderBody.put("lastName", order.lastName);
-        createOrderBody.put("address", order.address);
-        createOrderBody.put("metroStation", order.metroStation);
-        createOrderBody.put("phone", order.phone);
-        createOrderBody.put("rentTime", order.rentTime);
-        createOrderBody.put("deliveryDate", order.deliveryDate);
-        createOrderBody.put("comment", order.comment);
-        createOrderBody.put("color", order.color);
-
         return given()
                 .log().all()
                 .spec(getBaseSpec())
-                .body(createOrderBody.toString())
+                .body(order)
                 .post(ORDER_PATH);
-    }
-    public String getRandomMetro(){
-        Random r = new Random();
-        Response response = given().get("https://qa-scooter.praktikum-services.ru/api/v1/stations/search").then().contentType(ContentType.JSON).extract().response();
-        List<String> jsonResponse = response.jsonPath().getList("$");
-        int randomMetro = r.nextInt(jsonResponse.size()-1);
-        return response.jsonPath().getString("name[" + randomMetro+ "]");
     }
 
     public Order getRandomOrder(List<String> color){
@@ -44,7 +26,7 @@ public class OrderClient extends RestAssuredClient{
         String name = faker.name().firstName();
         String lastName = faker.name().lastName();
         String address = faker.address().streetAddressNumber();
-        String metro = getRandomMetro();
+        String metro = "Чертановская";
         String phone = faker.name().firstName();
         int rentTime = random.nextInt(6)+ 1;
         String comment = faker.name().firstName();
@@ -52,26 +34,10 @@ public class OrderClient extends RestAssuredClient{
         return new Order(color, name, lastName, address, metro, phone, rentTime, comment );
     }
 
-    public void cancelOrder (int trackId){
-        JSONObject cancel = new JSONObject();
-        cancel.put("track", trackId);
-        given()
-                .log().all()
-                .spec(getBaseSpec())
-                .body(cancel.toString())
-                .when()
-                .put(ORDER_PATH + "/cancel")
-                .then()
-                .assertThat()
-                .statusCode(200);
-    }
     public int cancelOrderReturnsStatus (int trackId){
-        JSONObject cancel = new JSONObject();
-        cancel.put("track", trackId);
         Response response = given()
                 .log().all()
                 .spec(getBaseSpec())
-                .body(cancel.toString())
                 .when()
                 .put(ORDER_PATH + "/cancel");
         return response.getStatusCode();
@@ -89,7 +55,7 @@ public class OrderClient extends RestAssuredClient{
         return response.body().path("orders");
     }
     public Response getOrdersWithLimitAndPageReturnsResponse(int limit, int page){
-        return given().spec(getBaseSpec()).log().all().get(ORDER_PATH + "?limit=" + limit + "&page=" + page);
+        return given().spec(getBaseSpec()).log().all().queryParam("limit", limit).queryParam("page", page).get(ORDER_PATH);
     }
 
     public int acceptOrderReturnsStatus(int orderId, int courierId ){

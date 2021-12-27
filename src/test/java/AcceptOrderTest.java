@@ -1,3 +1,4 @@
+import io.qameta.allure.Step;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -43,19 +44,18 @@ public class AcceptOrderTest {
     public void courierCanAcceptOrderTest(){
         courierId = createCourierAndGetId();
         order = orderClient.getRandomOrder(color);
-        orderId = getOrderIdByTrack(order);
+        orderId = createOrderAndGetOrderId(order);
         status = orderClient.acceptOrderReturnsStatus(orderId, courierId);
-        courierClient.deleteReturnsStatus(courierId);
+        courierClient.deleteCourier(courierId);
         assertEquals("Не принят заказ", 200, status);
     }
 
     //тест возвращает 404 без переданного id, что не соответствует спецификации, должен 400. Заигнорировала до исправления ситуации
-    @Ignore
     @Test
     public void canNotAcceptOrderIfNoIdIsPassed(){
         courierId = createCourierAndGetId();
         status = orderClient.acceptOrderWithNoOrderIdReturnsStatus(courierId);
-        courierClient.deleteReturnsStatus(courierId);
+            courierClient.deleteCourier(courierId);
         assertEquals("Принят заказ без id", 400, status);
     }
 
@@ -63,7 +63,7 @@ public class AcceptOrderTest {
     @Test
     public void canNotAcceptOrderIfNoCourierIsPassed(){
         order = orderClient.getRandomOrder(color);
-        orderId = getOrderIdByTrack(order);
+        orderId = createOrderAndGetOrderId(order);
         status = orderClient.acceptOrderWithNoCourierIdReturnsStatus(orderId);
         assertEquals("Принят заказ без номера курьера", 400, status);
     }
@@ -72,8 +72,8 @@ public class AcceptOrderTest {
     public void canNotAcceptOrderIfWrongIdIsPassed(){
         courierId = createCourierAndGetId();
         order = orderClient.getRandomOrder(color);
-        String wrongId = getOrderIdByTrack(order) + "order";
-        courierClient.deleteReturnsStatus(courierId);
+        String wrongId = createOrderAndGetOrderId(order) + "order";
+        courierClient.deleteCourier(courierId);
         status = orderClient.acceptOrderWithWrongOrderIdReturnsStatus(wrongId, courierId);
         assertNotEquals("Принят заказ с некорректным id", 200, status);
     }
@@ -81,23 +81,26 @@ public class AcceptOrderTest {
     @Test
     public void canNotAcceptOrderIfWrongCourierIsPassed(){
         courierId = createCourierAndGetId();
-        courierClient.deleteReturnsStatus(courierId);
+        courierClient.deleteCourier(courierId);
         order = orderClient.getRandomOrder(color);
-        orderId= getOrderIdByTrack(order);
+        orderId= createOrderAndGetOrderId(order);
         status = orderClient.acceptOrderReturnsStatus(orderId, courierId);
         assertEquals("Принят заказ c некорректным courierId", 404, status);
     }
 
 
-    public int getOrderIdByTrack(Order someOrder){
+    @Step("get order id by track")
+    public int createOrderAndGetOrderId(Order someOrder){
         track = orderClient.createOrderReturnsResponse(order).getBody().path("track");
         return orderClient.getOrderIdByTrack(track);
     }
 
+    @Step("create courier and get id")
     public int createCourierAndGetId(){
-        Courier courier = Courier.getRandom();
-        courierClient.createReturnsStatus(courier);
+        Courier courier = Courier.randomize();
+        courierClient.create(courier);
+
         courierCredentials = new CourierCredentials(courier.login, courier.password);
-        return courierClient.loginReturnsId(courierCredentials);
+        return courierClient.login(CourierCredentials.getCourierCredentials(courier)).getBody().path("id");
     }
 }

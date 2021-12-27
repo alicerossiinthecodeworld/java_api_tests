@@ -1,3 +1,4 @@
+import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import org.json.JSONObject;
 
@@ -5,35 +6,26 @@ import static io.restassured.RestAssured.given;
 public class CourierClient extends RestAssuredClient {
     private static final String COURIER_PATH = "api/v1/courier";
 
-    public boolean createReturnsIsCreated(Courier courier) {
-        JSONObject registerRequestBody = new JSONObject();
-        registerRequestBody.put("login", courier.login);
-        registerRequestBody.put("password", courier.password);
-        registerRequestBody.put("firstName", courier.firstName);
+    public Response create(Courier courier) {
         return given()
                 .log().all()
                 .spec(getBaseSpec())
-                .body(registerRequestBody.toString())
+                .body(courier).when()
+                .post(COURIER_PATH);
+    }
+
+    public Boolean createReturnsIfOk(Courier courier){
+        return given()
+                .log().all()
+                .spec(getBaseSpec())
+                .body(courier)
                 .when()
                 .post(COURIER_PATH)
                 .then()
                 .extract()
                 .path("ok");
-        }
-
-    public int  createReturnsStatus (Courier courier){
-        JSONObject registerRequestBody = new JSONObject();
-        registerRequestBody.put("login", courier.login);
-        registerRequestBody.put("password", courier.password);
-        registerRequestBody.put("firstName", courier.firstName);
-        Response response = given()
-                .log().all()
-                .spec(getBaseSpec())
-                .body(registerRequestBody.toString())
-                .when()
-                .post(COURIER_PATH);
-        return response.statusCode();
     }
+
     public int createWithoutLoginReturnsStatus(Courier courier) {
         JSONObject registerRequestBodyWithoutLogin = new JSONObject();
         registerRequestBodyWithoutLogin.put("password", courier.password);
@@ -47,6 +39,7 @@ public class CourierClient extends RestAssuredClient {
         return response.statusCode();
 
     }
+
     public int createWithoutPasswordReturnsStatus(Courier courier) {
         JSONObject registerRequestBodyWithoutPassword = new JSONObject();
         registerRequestBodyWithoutPassword.put("password", courier.password);
@@ -58,9 +51,10 @@ public class CourierClient extends RestAssuredClient {
                 .when()
                 .post(COURIER_PATH);
         return response.statusCode();
+
     }
 
-    public int createWithoutFirstNameReturnsStatus(Courier courier){
+    public int createWithoutFirstNameReturnsStatus(Courier courier) {
         JSONObject registerRequestBodyWithoutFirstName = new JSONObject();
         registerRequestBodyWithoutFirstName.put("login", courier.login);
         registerRequestBodyWithoutFirstName.put("password", courier.password);
@@ -71,40 +65,17 @@ public class CourierClient extends RestAssuredClient {
                 .when()
                 .post(COURIER_PATH);
         return response.statusCode();
-
     }
 
-    public int loginReturnsId(CourierCredentials courierCredentials){
-        JSONObject loginRequestBody = new JSONObject();
-        loginRequestBody.put("login", courierCredentials.login);
-        loginRequestBody.put("password", courierCredentials.password);
+    public Response login(CourierCredentials courierCredentials) {
         return given()
                 .log().all()
                 .spec(getBaseSpec())
-                .body(loginRequestBody.toString())
-                .when()
-                .post(COURIER_PATH + "/login")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .extract()
-                .path("id");
-    }
-
-    public int loginReturnsStatus(CourierCredentials courierCredentials){
-        JSONObject loginRequestBody = new JSONObject();
-        loginRequestBody.put("login", courierCredentials.login);
-        loginRequestBody.put("password", courierCredentials.password);
-        Response response = given()
-                .log().all()
-                .spec(getBaseSpec())
-                .body(loginRequestBody.toString())
+                .body(courierCredentials)
                 .when()
                 .post(COURIER_PATH + "/login");
-        return response.statusCode();
     }
-
-    public int loginWithStringLogopassReturnStatus(String login, String password){
+    public int loginWithStringLogopassReturnStatus(String login, String password) {
         JSONObject loginRequestBody = new JSONObject();
         loginRequestBody.put("login", login);
         loginRequestBody.put("password", password);
@@ -117,7 +88,7 @@ public class CourierClient extends RestAssuredClient {
         return response.statusCode();
     }
 
-    public int loginWithoutLoginReturnStatus(CourierCredentials courierCredentials){
+    public int loginWithoutLoginReturnStatus(CourierCredentials courierCredentials) {
         JSONObject loginRequestBodyWithoutLogin = new JSONObject();
         loginRequestBodyWithoutLogin.put("password", courierCredentials.password);
         Response response = given()
@@ -129,7 +100,7 @@ public class CourierClient extends RestAssuredClient {
         return response.statusCode();
     }
 
-    public int loginWithoutPasswordReturnStatus(CourierCredentials courierCredentials){
+    public int loginWithoutPasswordReturnStatus(CourierCredentials courierCredentials) {
         JSONObject loginRequestBodyWithoutPassword = new JSONObject();
         loginRequestBodyWithoutPassword.put("login", courierCredentials.login);
         Response response = given()
@@ -141,27 +112,14 @@ public class CourierClient extends RestAssuredClient {
         return response.statusCode();
     }
 
-
-    public boolean delete(int courierId) {
+    public Response deleteCourier(int courierId) {
         return given()
                 .log().all()
                 .spec(getBaseSpec())
                 .when()
-                .delete(COURIER_PATH + "/" + courierId)
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .extract()
-                .path("ok");
-    }
-    public int deleteReturnsStatus(int courierId) {
-        Response response = given()
-                .log().all()
-                .spec(getBaseSpec())
-                .when()
                 .delete(COURIER_PATH + "/" + courierId);
-        return response.statusCode();
     }
+
     public int deleteWithoutIdReturnsStatus() {
         Response response = given()
                 .log().all()
@@ -170,5 +128,7 @@ public class CourierClient extends RestAssuredClient {
                 .delete(COURIER_PATH + "/");
         return response.statusCode();
     }
+
+
 }
 
