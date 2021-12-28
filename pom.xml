@@ -61,6 +61,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-rest-assured</artifactId>
+            <version>${allure.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>4.4.0</version>
@@ -90,6 +95,12 @@
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20211205</version>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>4.4.0</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
